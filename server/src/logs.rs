@@ -2,14 +2,18 @@ use time::macros::format_description;
 use tracing_subscriber::{
     EnvFilter,
     fmt::{self, time::LocalTime},
+    layer::SubscriberExt,
+    util::SubscriberInitExt,
 };
 
 pub fn init_logs() {
-    let _filter = EnvFilter::default()
+    let filter = EnvFilter::default()
         .add_directive("server=trace".parse().unwrap())
         .add_directive("axum=info".parse().unwrap());
 
-    let _timer = LocalTime::new(format_description!(
+    let timer = LocalTime::new(format_description!(
         "[day]-[month]-[year] [hour]:[minute]:[second]"
     ));
+    
+    tracing_subscriber::registry().with(filter).with(fmt::layer().with_timer(timer)).init();
 }
