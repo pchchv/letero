@@ -12,6 +12,9 @@ async fn main() {
     let _guard = init_logs();
     let db = init_db().await;
     let state = Arc::new(AppState { db });
+    let app = Router::new()
+        .route("/", get(|| async { "Hello, World!" }))
+        .with_state(state);
     let port = 4000;
     let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, port))
         .await
