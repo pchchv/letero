@@ -1,3 +1,4 @@
+use sha2::Digest;
 use std::ops::Deref;
 use serde::{Deserialize, Serialize};
 use axum::{Json, http::StatusCode, response::IntoResponse};
@@ -9,6 +10,10 @@ pub const SESSION_LIFETIME: i64 = 60 * 60 * 24 * 7;
 pub struct Username(String);
 
 impl Username {
+    pub fn new<I: Into<String>>(username: I) -> Self {
+        Self(username.into())
+    }
+
     pub fn validate(&self) -> Vec<String> {
         let mut errors = Vec::new();
         let trim = self.0.trim();
@@ -49,6 +54,10 @@ impl Deref for Username {
 pub struct Password(String);
 
 impl Password {
+    pub fn new<I: Into<String>>(password: I) -> Self {
+        Self(password.into())
+    }
+
     pub fn validate(&self) -> Vec<String> {
         let mut errors = Vec::new();
         let trim = self.0.trim();
@@ -151,5 +160,26 @@ impl IntoResponse for LoginUserResponse {
             Json(self),
         )
             .into_response()
+    }
+}
+
+pub struct PasswordHash(String, String);
+
+impl PasswordHash {
+    pub fn new(password: &str, salt: &str) -> Self {
+        let hash = sha2::Sha256::digest(format!("{password}{salt}").as_bytes());
+        Self(hex::encode(hash), salt.to_owned())
+    }
+
+    pub fn get_salt(&self) -> &str {
+        &self.1
+    }
+}
+
+impl Deref for PasswordHash {
+    type Target = String;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
