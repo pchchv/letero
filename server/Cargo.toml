@@ -12,3 +12,5 @@ tracing = "0.1.41"
 tracing-appender = "0.2.3"
 tracing-subscriber = { version = "0.3.20", features = ["env-filter", "fmt", "local-time"] }
 serde = { version = "1.0.219", features = ["rc"] }
+sha2 = "0.10.9"
+hex = "0.4.3"
