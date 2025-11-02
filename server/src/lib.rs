@@ -1,5 +1,6 @@
 mod db;
 mod logs;
+pub mod services;
 pub mod controllers;
 
 pub use {
