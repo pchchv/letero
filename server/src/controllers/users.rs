@@ -1,11 +1,7 @@
 use std::ops::Deref;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize)]
-pub struct LoginUserRequest {
-    pub username: Username,
-    pub password: Password,
-}
+pub const SESSION_LIFETIME: i64 = 60 * 60 * 24 * 7;
 
 #[derive(Deserialize)]
 pub struct Username(String);
@@ -74,4 +70,48 @@ impl Deref for Password {
     fn deref(&self) -> &Self::Target {
         &self.0
     }
+}
+
+#[derive(Clone, Copy, Serialize, Deserialize, Debug, sqlx::Type)]
+#[sqlx(transparent)]
+pub struct UserId(i32);
+
+impl UserId {
+    pub fn new(id: i32) -> Self {
+        Self(id)
+    }
+}
+
+impl From<i32> for UserId {
+    fn from(value: i32) -> Self {
+        Self(value)
+    }
+}
+
+impl PartialEq<i32> for UserId {
+    fn eq(&self, other: &i32) -> bool {
+        self.0 == *other
+    }
+}
+
+impl std::fmt::Display for UserId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl Deref for UserId {
+    type Target = i32;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[derive(Clone)]
+pub struct User {
+    pub id: UserId,
+    pub username: String,
+    pub password: String,
+    pub created_at: time::UtcDateTime,
 }
