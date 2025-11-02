@@ -13,4 +13,8 @@ async fn main() {
         .expect("failed to bind port");
 
     tracing::info!("Listening on port {port}");
+
+    axum::serve(listener, app)
+        .await
+        .expect("failed to start server");
 }
