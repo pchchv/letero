@@ -1,0 +1,60 @@
+-- Add up migration script here
+
+DROP TABLE IF EXISTS Messages;
+DROP TABLE IF EXISTS ChatMembers;
+DROP TABLE IF EXISTS Chats;
+DROP TABLE IF EXISTS Sessions;
+DROP TABLE IF EXISTS Users;
+
+CREATE TABLE Users (
+    Id SERIAL PRIMARY KEY,
+    Name VARCHAR(30) NOT NULL UNIQUE,
+    Password CHAR(64) NOT NULL,
+    CreatedAt TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE Sessions (
+    Uid CHAR(11) PRIMARY KEY NOT NULL,
+    UserId INTEGER NOT NULL,
+    LoggedAt TIMESTAMPTZ DEFAULT NOW(),
+    FOREIGN KEY (UserId) REFERENCES Users(Id) ON DELETE CASCADE
+);
+
+CREATE TABLE Chats (
+    Id SERIAL PRIMARY KEY,
+    Title VARCHAR(50) NOT NULL,
+    CreatedAt TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE ChatMembers (
+    UserId INTEGER,
+    ChatId INTEGER NOT NULL,
+    PRIMARY KEY (ChatId, UserId),
+    FOREIGN KEY (ChatId) REFERENCES Chats(Id) ON DELETE CASCADE,
+    FOREIGN KEY (UserId) REFERENCES Users(Id) ON DELETE SET NULL
+);
+
+CREATE TABLE Messages (
+    Id BIGSERIAL NOT NULL,
+    UserId INTEGER,
+    ChatId INTEGER NOT NULL,
+    Content TEXT NOT NULL,
+    CreatedAt TIMESTAMPTZ DEFAULT NOW(),
+    PRIMARY KEY (Id),
+    FOREIGN KEY (UserId) REFERENCES Users(Id) ON DELETE SET NULL,
+    FOREIGN KEY (ChatId) REFERENCES Chats(Id) ON DELETE CASCADE
+);
+
+CREATE INDEX IdxSessionsUserId ON Sessions(UserId);
+CREATE INDEX IdxChatMembersUserId ON ChatMembers(UserId);
+CREATE INDEX IdxChatMembersChatId ON ChatMembers(ChatId);
+CREATE INDEX IdxMessagesUserId ON Messages(UserId);
+CREATE INDEX IdxMessagesChatId ON Messages(ChatId);
+
+-- Add down migration script here
+
+DROP TABLE Messages;
+DROP TABLE ChatMembers;
+DROP TABLE Chats;
+DROP TABLE Sessions;
+DROP TABLE Users;
