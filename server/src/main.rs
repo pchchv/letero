@@ -1,12 +1,17 @@
-use std::net::Ipv4Addr;
+use std::{net::Ipv4Addr, sync::Arc};
 use axum::{Router, routing::get};
-use server::init_logs;
+use server::{init_logs, init_db};
 use tokio::net::TcpListener;
+
+struct AppState {
+  db: sqlx::PgPool,
+}
 
 #[tokio::main]
 async fn main() {
     let _guard = init_logs();
-    let app = Router::new().route("/", get(|| async { "Hello, World!" }));
+    let db = init_db().await;
+    let state = Arc::new(AppState { db });
     let port = 4000;
     let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, port))
         .await
