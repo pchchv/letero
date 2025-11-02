@@ -183,3 +183,16 @@ impl Deref for PasswordHash {
         &self.0
     }
 }
+
+pub struct LogoutUserResponse;
+
+impl IntoResponse for LogoutUserResponse {
+    fn into_response(self) -> axum::response::Response {
+        (
+            StatusCode::OK,
+            [("Set-Cookie", format!("{SESSION_COOKIE_NAME}=_; Max-Age=0"))],
+            (),
+        )
+            .into_response()
+    }
+}
