@@ -1,9 +1,9 @@
 FROM rust:bookworm
 RUN cargo install sqlx-cli --no-default-features --features postgres
 
-WORKDIR /workspace
+WORKDIR /
 ADD migrations migrations
-WORKDIR /workspace/server
+WORKDIR /server
 ADD server .
 
 RUN cargo build
