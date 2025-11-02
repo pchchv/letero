@@ -1,5 +1,7 @@
 use std::ops::Deref;
 use serde::{Deserialize, Serialize};
+use axum::{Json, http::StatusCode, response::IntoResponse};
+use crate::services::auth::SESSION_COOKIE_NAME;
 
 pub const SESSION_LIFETIME: i64 = 60 * 60 * 24 * 7;
 
@@ -114,4 +116,40 @@ pub struct User {
     pub username: String,
     pub password: String,
     pub created_at: time::UtcDateTime,
+}
+
+#[derive(Deserialize)]
+pub struct LoginUserRequest {
+    pub username: Username,
+    pub password: Password,
+}
+
+#[derive(Serialize)]
+pub struct LoginUserResponse {
+    pub user_id: UserId,
+    #[serde(skip)]
+    pub session: String,
+}
+
+impl LoginUserResponse {
+    pub fn new(user_id: UserId, session: String) -> Self {
+        Self { user_id, session }
+    }
+}
+
+impl IntoResponse for LoginUserResponse {
+    fn into_response(self) -> axum::response::Response {
+        (
+            StatusCode::CREATED,
+            [(
+                "Set-Cookie",
+                format!(
+                    "{SESSION_COOKIE_NAME}={}, Max-Age={SESSION_LIFETIME}",
+                    self.session
+                ),
+            )],
+            Json(self),
+        )
+            .into_response()
+    }
 }
