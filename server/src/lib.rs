@@ -8,6 +8,7 @@ pub mod services;
 pub mod controllers;
 
 pub use {
+    state::AppState,
     db::init_db,
     logs::init_logs
 };
