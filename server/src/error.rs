@@ -1,6 +1,6 @@
 use crate::services::trace::TraceId;
 use serde::Serialize;
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Display};
 use axum::{Json, http::StatusCode, response::IntoResponse};
 
 #[derive(Serialize, Debug)]
@@ -36,5 +36,32 @@ impl IntoResponse for ApiError {
             ApiError::Internal => StatusCode::INTERNAL_SERVER_ERROR,
         };
         (status, Json(self)).into_response()
+    }
+}
+
+pub enum RepositoryError {
+    Unknown(sqlx::Error),
+    Conflict,
+}
+
+impl Display for RepositoryError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            RepositoryError::Unknown(err) => write!(f, "unknown repository error: {err}"),
+            RepositoryError::Conflict => write!(f, "conflict"),
+        }
+    }
+}
+
+impl From<sqlx::Error> for RepositoryError {
+    fn from(err: sqlx::Error) -> Self {
+        match err {
+            sqlx::Error::Database(ref db)
+                if db.kind() == sqlx::error::ErrorKind::UniqueViolation =>
+            {
+                RepositoryError::Conflict
+            }
+            _ => RepositoryError::Unknown(err),
+        }
     }
 }
