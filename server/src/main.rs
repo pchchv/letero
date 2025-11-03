@@ -3,15 +3,13 @@ use axum::{Router, middleware, routing::get};
 use server::{init_logs, init_db, services::trace::trace};
 use tokio::net::TcpListener;
 
-struct AppState {
-  db: sqlx::PgPool,
-}
-
 #[tokio::main]
 async fn main() {
     let _guard = init_logs();
     let db = init_db().await;
-    let state = Arc::new(AppState { db });
+    let users = Arc::new(PgUsersRepository::new(db));
+    let sessions = Arc::new(PgSessionsRepository::new(db.clone()));
+    let state = Arc::new(AppState { users, sessions });
     let app = Router::new()
         .route("/", get(|| async { "Hello, World!" }))
         .with_state(state)
