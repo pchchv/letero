@@ -18,3 +18,7 @@ small_uid = "0.2.4"
 utoipa = "5.4.0"
 utoipa-axum = "0.2.0"
 utoipa-rapidoc = { version = "6.0.0", features = ["axum"] }
+async-trait = "0.1.89"
+
+[dev-dependencies]
+mockall = "0.13.1"
