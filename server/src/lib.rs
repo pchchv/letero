@@ -1,5 +1,6 @@
 mod db;
 mod logs;
+mod repositories;
 pub mod error;
 pub mod models;
 pub mod services;
