@@ -1,6 +1,6 @@
 use std::{net::Ipv4Addr, sync::Arc};
-use axum::{Router, routing::get};
-use server::{init_logs, init_db};
+use axum::{Router, middleware, routing::get};
+use server::{init_logs, init_db, services::trace::trace};
 use tokio::net::TcpListener;
 
 struct AppState {
@@ -14,7 +14,9 @@ async fn main() {
     let state = Arc::new(AppState { db });
     let app = Router::new()
         .route("/", get(|| async { "Hello, World!" }))
-        .with_state(state);
+        .with_state(state)
+        .layer(middleware::from_fn(trace));
+
     let port = 4000;
     let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, port))
         .await
