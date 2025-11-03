@@ -2,7 +2,7 @@ mod db;
 mod logs;
 pub mod error;
 pub mod services;
-pub mod controllers;
+pub mod models;
 
 pub use {
     db::init_db,
