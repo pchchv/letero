@@ -2,7 +2,7 @@ use serde::Serialize;
 use std::{fmt::Display, ops::Deref, sync::Arc};
 use axum::{extract::Request, middleware::Next, response::Response};
 
-#[derive(Serialize, Clone, Debug, utoipa::ToSchema)]
+#[derive(Serialize, Clone, Debug)]
 pub struct TraceId(Arc<String>);
 
 impl TraceId {
