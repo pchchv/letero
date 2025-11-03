@@ -196,3 +196,9 @@ impl IntoResponse for LogoutUserResponse {
             .into_response()
     }
 }
+
+#[derive(Deserialize)]
+pub struct NewUserRequest {
+    pub username: Username,
+    pub password: Password,
+}
