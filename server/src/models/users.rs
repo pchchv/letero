@@ -163,16 +163,18 @@ impl IntoResponse for LoginUserResponse {
     }
 }
 
-pub struct PasswordHash(String, String);
+pub struct PasswordHash {
+    password: String,
+    salt: String,
+}
 
 impl PasswordHash {
     pub fn new(password: &str, salt: &str) -> Self {
         let hash = sha2::Sha256::digest(format!("{password}{salt}").as_bytes());
-        Self(hex::encode(hash), salt.to_owned())
-    }
-
-    pub fn get_salt(&self) -> &str {
-        &self.1
+        Self {
+            password: hex::encode(hash),
+            salt: salt.to_owned(),
+        }
     }
 }
 
@@ -180,7 +182,7 @@ impl Deref for PasswordHash {
     type Target = String;
 
     fn deref(&self) -> &Self::Target {
-        &self.0
+        &self.password
     }
 }
 
