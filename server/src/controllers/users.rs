@@ -1,4 +1,4 @@
-use crate::{AppState, models::users::NewUserRequest, services::trace::TraceId, error::ApiError};
+use crate::{AppState, models::users::{NewUserRequest, PasswordHash}, services::trace::TraceId, error::ApiError};
 use axum::{Form, Extension, extract::State, http::StatusCode};
 use std::{collections::HashMap, sync::Arc};
 
@@ -17,6 +17,9 @@ pub async fn new_user(
             trace_id,
         });
     }
+
+    let salt = state.random.lock().await.get_salt();
+    let _password = PasswordHash::new(&user.password, &salt);
 
     todo!()
 }
