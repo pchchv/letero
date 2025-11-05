@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT c.Id, c.Title as \"title: _\", array_agg(cm.UserId) AS \"users_ids!: _\"\n            FROM Chats c JOIN ChatMembers cm ON c.Id = cm.ChatId\n            WHERE c.Id IN (SELECT ChatId FROM ChatMembers WHERE UserId = $1)\n            GROUP BY c.Id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "title: _",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "users_ids!: _",
+        "type_info": "Int4Array"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "9e172a021f74773bbba35eec4ef38c0defbf010178b203943bd143a15fdee6bc"
+}

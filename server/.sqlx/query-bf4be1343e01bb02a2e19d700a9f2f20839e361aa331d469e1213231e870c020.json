@@ -1,0 +1,48 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT Id, UserId as \"sender_id: _\", ChatId as chat_id, Content, CreatedAt as created_at\n                FROM messages\n                WHERE chatid = $1 AND ($2::BIGINT IS NULL OR Id < $2)\n                ORDER BY CreatedAt DESC\n                LIMIT $3",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "sender_id: _",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 2,
+        "name": "chat_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 3,
+        "name": "content",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "bf4be1343e01bb02a2e19d700a9f2f20839e361aa331d469e1213231e870c020"
+}

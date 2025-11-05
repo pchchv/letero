@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT Salt FROM Users WHERE Name = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "salt",
+        "type_info": "Bpchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "9de22fe50949d3d01d96c6619e325aceec5f56ac12e9638b292fe2fdfd78ed33"
+}

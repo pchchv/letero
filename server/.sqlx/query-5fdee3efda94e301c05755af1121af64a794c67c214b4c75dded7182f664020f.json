@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT ChatId FROM ChatMembers WHERE UserId = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "chatid",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "5fdee3efda94e301c05755af1121af64a794c67c214b4c75dded7182f664020f"
+}

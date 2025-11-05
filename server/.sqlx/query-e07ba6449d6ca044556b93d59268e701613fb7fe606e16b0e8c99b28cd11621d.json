@@ -1,0 +1,48 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO Messages (ChatId, UserId, Content) \n            VALUES ($1, $2, $3) \n            RETURNING Id, UserId as \"sender_id: _\", ChatId as chat_id, Content, CreatedAt as created_at",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "sender_id: _",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 2,
+        "name": "chat_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 3,
+        "name": "content",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "e07ba6449d6ca044556b93d59268e701613fb7fe606e16b0e8c99b28cd11621d"
+}

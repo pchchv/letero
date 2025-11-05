@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT *, similarity(name, $1) AS sim \n                FROM Users \n                WHERE Name % $1\n                ORDER BY sim DESC\n                LIMIT 5",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "password",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "createdat",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 4,
+        "name": "salt",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "sim",
+        "type_info": "Float4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      null
+    ]
+  },
+  "hash": "2e3195f3983eb5d5691f035693e9467ec58aea0ec0e89cc97d7d2818b60f89c2"
+}
