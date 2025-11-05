@@ -1,7 +1,10 @@
 use crate::services::{trace::TraceId, auth::SESSION_COOKIE_NAME};
 use axum::{Json, http::StatusCode, response::IntoResponse};
+use std::{collections::HashMap, fmt::Display};
+use serde::Serialize;
+use utoipa::ToSchema;
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, ToSchema)]
 #[serde(tag = "type")]
 pub enum ApiError {
     Unknown {
@@ -46,9 +49,11 @@ impl IntoResponse for ApiError {
     }
 }
 
+#[derive(Debug)]
 pub enum RepositoryError {
     Unknown(sqlx::Error),
     Conflict,
+    NotFound,
 }
 
 impl Display for RepositoryError {
@@ -56,6 +61,7 @@ impl Display for RepositoryError {
         match self {
             RepositoryError::Unknown(err) => write!(f, "unknown repository error: {err}"),
             RepositoryError::Conflict => write!(f, "conflict"),
+            RepositoryError::NotFound => write!(f, "not found"),
         }
     }
 }
@@ -68,6 +74,7 @@ impl From<sqlx::Error> for RepositoryError {
             {
                 RepositoryError::Conflict
             }
+            sqlx::Error::RowNotFound => RepositoryError::NotFound,
             _ => RepositoryError::Unknown(err),
         }
     }
