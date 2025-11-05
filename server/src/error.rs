@@ -83,3 +83,7 @@ impl From<sqlx::Error> for RepositoryError {
         }
     }
 }
+
+pub struct SseError {
+    pub message: String,
+}
