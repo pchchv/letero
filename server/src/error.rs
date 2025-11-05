@@ -24,6 +24,9 @@ pub enum ApiError {
     Unauthorized {
         trace_id: TraceId,
     },
+    Forbidden {
+        trace_id: TraceId,
+    },
 }
 
 impl IntoResponse for ApiError {
@@ -44,6 +47,7 @@ impl IntoResponse for ApiError {
                 ).into_response();
             }
             ApiError::Internal => StatusCode::INTERNAL_SERVER_ERROR,
+            ApiError::Forbidden { .. } => StatusCode::FORBIDDEN,
         };
         (status, Json(self)).into_response()
     }
