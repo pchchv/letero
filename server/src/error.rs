@@ -1,6 +1,4 @@
-use crate::services::trace::TraceId;
-use serde::Serialize;
-use std::{collections::HashMap, fmt::Display};
+use crate::services::{trace::TraceId, auth::SESSION_COOKIE_NAME};
 use axum::{Json, http::StatusCode, response::IntoResponse};
 
 #[derive(Serialize, Debug)]
@@ -32,7 +30,16 @@ impl IntoResponse for ApiError {
             ApiError::Validation { .. } => StatusCode::BAD_REQUEST,
             ApiError::Conflict { .. } => StatusCode::CONFLICT,
             ApiError::NotFound { .. } => StatusCode::NOT_FOUND,
-            ApiError::Unauthorized { .. } => StatusCode::UNAUTHORIZED,
+            ApiError::Unauthorized { .. } => {
+                return (
+                    StatusCode::UNAUTHORIZED,
+                    [
+                        ("Set-Cookie", format!("{SESSION_COOKIE_NAME}=_; Max-Age=0")),
+                        ("Location", "/unauthorized".to_owned()),
+                    ],
+                    Json(self),
+                ).into_response();
+            }
             ApiError::Internal => StatusCode::INTERNAL_SERVER_ERROR,
         };
         (status, Json(self)).into_response()
