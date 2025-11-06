@@ -1,15 +1,16 @@
-use crate::{
-    error::{ApiError, RepositoryError},
-    models::users::{
-        LoginUserRequest, LoginUserResponse, PasswordHash, UserId
-    },
-    rand::RandomGenerator,
-    repositories::users::UsersRepository,
-    services::trace::TraceId,
-    state::AppState,
-};
 use axum::{extract::State, Extension, Json};
 use std::{collections::HashMap, sync::Arc};
+use time::{Duration, OffsetDateTime};
+use crate::{
+    error::{ApiError, RepositoryError},
+    repositories::{sessions::SessionsRepository, users::UsersRepository},
+    services::trace::TraceId,
+    rand::RandomGenerator,
+    state::AppState,
+    models::users::{
+        LoginUserRequest, LoginUserResponse, PasswordHash, UserId, SESSION_LIFETIME
+    },
+};
 
 /// Create new user
 #[utoipa::path(post,
@@ -95,4 +96,41 @@ async fn create_user(
             })
         }
     }
+}
+
+async fn create_session(
+    sessions: &dyn SessionsRepository,
+    user_id: UserId,
+    trace_id: &TraceId,
+) -> Result<String, ApiError> {
+    for _ in 0..5 {
+        tracing::trace!("generating session UID...");
+        let uid = small_uid::SmallUid::new().to_string();
+
+        let expires_at =
+            OffsetDateTime::now_utc().saturating_add(Duration::seconds(SESSION_LIFETIME));
+
+        tracing::trace!("trying to save session UID {uid} for user id {user_id} in database...");
+        match sessions.create_session(&uid, user_id, expires_at).await {
+            Ok(_) => {
+                tracing::info!("session {} created for user {}", uid, user_id);
+                return Ok(uid);
+            }
+            Err(RepositoryError::Conflict) => {
+                tracing::warn!("session UID {} collision for user {}", uid, user_id);
+                continue;
+            }
+            Err(err) => {
+                tracing::error!("failed to create {} session: {}", uid, err);
+                return Err(ApiError::Unknown {
+                    trace_id: trace_id.clone(),
+                });
+            }
+        };
+    }
+
+    tracing::error!("failed to create session");
+    Err(ApiError::Conflict {
+        trace_id: trace_id.clone(),
+    })
 }
