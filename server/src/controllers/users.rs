@@ -1,21 +1,34 @@
 use crate::{
     error::{ApiError, RepositoryError},
     models::users::{
-        LoginUserRequest, PasswordHash, UserId,
+        LoginUserRequest, LoginUserResponse, PasswordHash, UserId
     },
     rand::RandomGenerator,
     repositories::users::UsersRepository,
     services::trace::TraceId,
     state::AppState,
 };
-use axum::{Form, Extension, extract::State, http::StatusCode};
+use axum::{extract::State, Extension, Json};
 use std::{collections::HashMap, sync::Arc};
 
+/// Create new user
+#[utoipa::path(post,
+    path = "/users",
+    tag = "users", 
+    request_body(
+        content = LoginUserRequest, 
+        description = "User credentials"),
+    responses(
+        (status = OK, description = "User created", body = LoginUserResponse),
+        (status = BAD_REQUEST, description = "Invalid user credentials", body = ApiError),
+        (status = INTERNAL_SERVER_ERROR, description = "Internal server error", body = ApiError)
+    )
+)]
 pub async fn new_user(
     Extension(trace_id): Extension<TraceId>,
     State(state): State<Arc<AppState>>,
-    Form(user): Form<NewUserRequest>,
-) -> Result<(StatusCode, [(&'static str, String); 1]), ApiError> {
+    Json(user): Json<LoginUserRequest>,
+) -> Result<LoginUserResponse, ApiError> {
     tracing::trace!("validationg user credentials");
     let errors = validate_user(&user);
 
@@ -27,11 +40,10 @@ pub async fn new_user(
         });
     }
 
-    let salt = state.random.lock().await.get_salt();
-    let password = PasswordHash::new(&user.password, &salt);
-    let user_id = create_user(&state.random, &*state.users, &user.username, &trace_id).await?;
+    let user_id = create_user(&state.random, &*state.users, &user, &trace_id).await?;
+    let session = create_session(&*state.sessions, user_id, &trace_id).await?;
 
-    todo!()
+    Ok(LoginUserResponse::new(user_id, session))
 }
 
 fn validate_user(user: &LoginUserRequest) -> HashMap<String, Vec<String>> {
