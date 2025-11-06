@@ -1,4 +1,13 @@
-use crate::{AppState, db, error::ApiError, models::users::{LoginUserRequest, NewUserRequest, PasswordHash, Username}, rand::RandomGenerator, repositories::users::UsersRepository, services::trace::TraceId};
+use crate::{
+    error::{ApiError, RepositoryError},
+    models::users::{
+        LoginUserRequest, PasswordHash, UserId,
+    },
+    rand::RandomGenerator,
+    repositories::users::UsersRepository,
+    services::trace::TraceId,
+    state::AppState,
+};
 use axum::{Form, Extension, extract::State, http::StatusCode};
 use std::{collections::HashMap, sync::Arc};
 
@@ -45,24 +54,27 @@ fn validate_user(user: &LoginUserRequest) -> HashMap<String, Vec<String>> {
 async fn create_user(
     rand: &tokio::sync::Mutex<dyn RandomGenerator>,
     users: &dyn UsersRepository,
-    user: &Username,
+    user: &LoginUserRequest,
     trace_id: &TraceId,
-) -> Result<i32, ApiError> {
+) -> Result<UserId, ApiError> {
+    tracing::trace!("hashing password...");
+
+    let salt = rand.lock().await.get_salt();
+    let password_hash = PasswordHash::new(&user.password, &salt);
 
     tracing::trace!("saving user credintials in database...");
-    let result = sqlx::query_scalar!(
-        "INSERT INTO Users (Name, Password, Salt) VALUES ($1, $2, $3) RETURNING Id",
-        username,
-        *password_hash,
-        salt
-    )
-    .fetch_one(&db)
-    .await;
+    let result = users.create_user(&user.username, password_hash).await;
 
     match result {
         Ok(id) => {
             tracing::info!("user {} created", *user.username);
             Ok(id)
+        }
+        Err(RepositoryError::Conflict) => {
+            tracing::warn!("user {} already exists", *user.username);
+            Err(ApiError::Conflict {
+                trace_id: trace_id.clone(),
+            })
         }
         Err(err) => {
             tracing::error!("failed to create user: {}", err);
