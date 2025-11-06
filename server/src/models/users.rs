@@ -191,8 +191,11 @@ pub struct LogoutUserResponse;
 impl IntoResponse for LogoutUserResponse {
     fn into_response(self) -> axum::response::Response {
         (
-            StatusCode::OK,
-            [("Set-Cookie", format!("{SESSION_COOKIE_NAME}=_; Max-Age=0"))],
+            StatusCode::TEMPORARY_REDIRECT,
+            [
+                ("Set-Cookie", format!("{SESSION_COOKIE_NAME}=_; Max-Age=0")),
+                ("Location", "/".to_owned()),
+            ],
             (),
         )
             .into_response()
