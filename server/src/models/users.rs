@@ -1,12 +1,13 @@
 use sha2::Digest;
 use std::ops::Deref;
+use utoipa::ToSchema;
 use serde::{Deserialize, Serialize};
 use axum::{Json, http::StatusCode, response::IntoResponse};
 use crate::services::auth::SESSION_COOKIE_NAME;
 
 pub const SESSION_LIFETIME: i64 = 60 * 60 * 24 * 7;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct Username(String);
 
 impl Username {
@@ -50,7 +51,7 @@ impl Deref for Username {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct Password(String);
 
 impl Password {
@@ -83,7 +84,7 @@ impl Deref for Password {
     }
 }
 
-#[derive(Clone, Copy, Serialize, Deserialize, Debug, sqlx::Type)]
+#[derive(Clone, Copy, Serialize, Deserialize, Debug, sqlx::Type, PartialEq, Eq, Hash, ToSchema)]
 #[sqlx(transparent)]
 pub struct UserId(i32);
 
@@ -124,16 +125,16 @@ pub struct User {
     pub id: UserId,
     pub username: String,
     pub password: String,
-    pub created_at: time::UtcDateTime,
+    pub created_at: time::OffsetDateTime,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct LoginUserRequest {
     pub username: Username,
     pub password: Password,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct LoginUserResponse {
     pub user_id: UserId,
     #[serde(skip)]
@@ -184,6 +185,7 @@ impl Deref for PasswordHash {
     }
 }
 
+#[derive(ToSchema)]
 pub struct LogoutUserResponse;
 
 impl IntoResponse for LogoutUserResponse {
