@@ -199,7 +199,6 @@ impl IntoResponse for LogoutUserResponse {
     }
 }
 
-
 #[derive(Serialize, ToSchema)]
 pub struct PublicUser {
     pub id: UserId,
@@ -215,5 +214,17 @@ impl From<User> for PublicUser {
             username: user.username,
             created_at: user.created_at,
         }
+    }
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct GetUserResponse {
+    #[serde(flatten)]
+    pub user: PublicUser,
+}
+
+impl IntoResponse for GetUserResponse {
+    fn into_response(self) -> axum::response::Response {
+        Json(self.user).into_response()
     }
 }
