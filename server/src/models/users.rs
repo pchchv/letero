@@ -199,8 +199,21 @@ impl IntoResponse for LogoutUserResponse {
     }
 }
 
-#[derive(Deserialize)]
-pub struct NewUserRequest {
-    pub username: Username,
-    pub password: Password,
+
+#[derive(Serialize, ToSchema)]
+pub struct PublicUser {
+    pub id: UserId,
+    pub username: String,
+    #[serde(with = "time::serde::iso8601")]
+    pub created_at: time::OffsetDateTime,
+}
+
+impl From<User> for PublicUser {
+    fn from(user: User) -> Self {
+        Self {
+            id: user.id,
+            username: user.username,
+            created_at: user.created_at,
+        }
+    }
 }
