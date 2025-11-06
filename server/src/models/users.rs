@@ -1,8 +1,14 @@
 use sha2::Digest;
+use time::Duration;
 use std::ops::Deref;
 use utoipa::ToSchema;
+use cookie::CookieBuilder;
 use serde::{Deserialize, Serialize};
-use axum::{Json, http::StatusCode, response::IntoResponse};
+use axum::{
+    Json,
+    response::IntoResponse,
+    http::{HeaderMap, HeaderValue, StatusCode, header},
+};
 use crate::services::auth::SESSION_COOKIE_NAME;
 
 pub const SESSION_LIFETIME: i64 = 60 * 60 * 24 * 7;
@@ -149,18 +155,17 @@ impl LoginUserResponse {
 
 impl IntoResponse for LoginUserResponse {
     fn into_response(self) -> axum::response::Response {
-        (
-            StatusCode::CREATED,
-            [(
-                "Set-Cookie",
-                format!(
-                    "{SESSION_COOKIE_NAME}={}, Max-Age={SESSION_LIFETIME}",
-                    self.session
-                ),
-            )],
-            Json(self),
-        )
-            .into_response()
+        let cookie = CookieBuilder::new(SESSION_COOKIE_NAME, self.session)
+            .max_age(Duration::seconds(SESSION_LIFETIME))
+            .build();
+
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            header::SET_COOKIE,
+            HeaderValue::from_str(cookie.to_string().as_str()).unwrap(),
+        );
+
+        (StatusCode::CREATED, headers, Json(self.user_id)).into_response()
     }
 }
 
@@ -170,7 +175,7 @@ impl PasswordHash {
     pub fn new(password: &str, salt: &str) -> Self {
         let hash = sha2::Sha256::digest(format!("{password}{salt}").as_bytes());
         Self(hex::encode(hash), salt.to_owned())
-        }
+    }
 
     pub fn get_salt(&self) -> &str {
         &self.1
