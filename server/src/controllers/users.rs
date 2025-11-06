@@ -25,6 +25,23 @@ pub async fn new_user(
     todo!()
 }
 
+fn validate_user(user: &LoginUserRequest) -> HashMap<String, Vec<String>> {
+    let mut errors = HashMap::new();
+    let username_errors = user.username.validate();
+    if !username_errors.is_empty() {
+        tracing::trace!("invalid username: {}", username_errors.join(", "));
+        errors.insert("username".to_owned(), username_errors);
+    }
+
+    let password_errors = user.password.validate();
+    if !password_errors.is_empty() {
+        tracing::trace!("invalid password: {}", password_errors.join(", "));
+        errors.insert("password".to_owned(), password_errors);
+    }
+
+    errors
+}
+
 async fn create_user(
     rand: &tokio::sync::Mutex<dyn RandomGenerator>,
     users: &dyn UsersRepository,
@@ -54,21 +71,4 @@ async fn create_user(
             })
         }
     }
-}
-
-fn validate_user(user: &NewUserRequest) -> HashMap<String, Vec<String>> {
-    let mut errors = HashMap::new();
-    let username_errors = user.username.validate();
-    if !username_errors.is_empty() {
-        tracing::trace!("invalid username: {}", username_errors.join(", "));
-        errors.insert("username".to_owned(), username_errors);
-    }
-
-    let password_errors = user.password.validate();
-    if !password_errors.is_empty() {
-        tracing::trace!("invalid password: {}", password_errors.join(", "));
-        errors.insert("password".to_owned(), password_errors);
-    }
-
-    errors
 }
