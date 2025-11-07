@@ -425,4 +425,27 @@ mod tests {
         let result = create_session(&sessions, UserId::new(1), &TraceId::new()).await;
         assert!(matches!(result, Err(ApiError::Unknown { .. })));
     }
+
+    #[test]
+    async fn test_get_or_create_session_ok() {
+        let mut sessions = MockSessionsRepository::new();
+        sessions
+            .expect_get_session_by_user_id()
+            .returning(|_| Ok("session".into()));
+
+        let result = get_or_create_session(&sessions, UserId::new(1), &TraceId::new()).await;
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    async fn test_get_or_create_session_not_found() {
+        let mut sessions = MockSessionsRepository::new();
+        sessions
+            .expect_get_session_by_user_id()
+            .returning(|_| Err(RepositoryError::NotFound));
+        sessions.expect_create_session().returning(|_, _, _| Ok(()));
+
+        let result = get_or_create_session(&sessions, UserId::new(1), &TraceId::new()).await;
+        assert!(result.is_ok());
+    }
 }
