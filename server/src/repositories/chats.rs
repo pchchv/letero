@@ -1,4 +1,4 @@
-use sqlx::{PgPool, query};
+use sqlx::{PgPool, query, query_as, query_scalar};
 use std::collections::HashSet;
 use crate::{
     error::RepositoryError,
@@ -68,5 +68,36 @@ impl ChatsRepository for PgChatsRepository {
             .execute(&self.0)
             .await?;
         Ok(())
+    }
+
+    async fn get_user_chats_ids(
+        &self,
+        user_id: UserId,
+    ) -> Result<HashSet<ChatId>, RepositoryError> {
+        let chat_ids = query_scalar!(
+            "SELECT ChatId FROM ChatMembers WHERE UserId = $1",
+            user_id as _
+        )
+        .fetch(&self.0)
+        .filter_map(|id| async { id.map(ChatId::from).ok() })
+        .collect::<HashSet<ChatId>>()
+        .await;
+
+        Ok(chat_ids)
+    }
+
+    async fn get_user_chats(&self, user_id: UserId) -> Result<Vec<Chat>, RepositoryError> {
+        let chats = query_as!(
+            Chat,
+            "SELECT c.Id, c.Title as \"title: _\", array_agg(cm.UserId) AS \"users_ids!: _\"
+            FROM Chats c JOIN ChatMembers cm ON c.Id = cm.ChatId
+            WHERE c.Id IN (SELECT ChatId FROM ChatMembers WHERE UserId = $1)
+            GROUP BY c.Id",
+            user_id as _
+        )
+        .fetch_all(&self.0)
+        .await?;
+
+        Ok(chats)
     }
 }
