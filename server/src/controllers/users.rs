@@ -2,13 +2,29 @@ use axum::{extract::{Path, State}, Extension, Json};
 use std::{collections::HashMap, sync::Arc};
 use time::{Duration, OffsetDateTime};
 use crate::{
-    repositories::{sessions::SessionsRepository, users::UsersRepository},
-    error::{ApiError, RepositoryError},
-    services::{auth::Auth, trace::TraceId},
     rand::RandomGenerator,
     state::AppState,
+    repositories::{
+        sessions::SessionsRepository,
+        users::UsersRepository
+    },
+    error::{
+        ApiError,
+        RepositoryError
+    },
+    services::{
+        auth::Auth,
+        trace::TraceId
+    },
     models::users::{
-        GetUserResponse, LoginUserRequest, LoginUserResponse, PasswordHash, UserId, Username, SESSION_LIFETIME
+        UserId,
+        Username,
+        PasswordHash,
+        GetUserResponse,
+        LoginUserRequest,
+        LoginUserResponse,
+        LogoutUserResponse,
+        SESSION_LIFETIME
     },
 };
 
@@ -119,6 +135,47 @@ pub async fn login_user(
     let session = get_or_create_session(&*state.sessions, user_id, &trace_id).await?;
 
     Ok(LoginUserResponse::new(user_id, session))
+}
+
+/// Logout user
+#[utoipa::path(
+    get,
+    path = "/logout",
+    tag = "users",
+    responses(
+        (status = OK, description = "User logged out", body = LogoutUserResponse),
+        (status = NOT_FOUND, description = "Session not found", body = ApiError),
+        (status = INTERNAL_SERVER_ERROR, description = "Internal server error", body = ApiError)
+    ),
+    security(("auth" = []))
+)]
+pub async fn logout_user(
+    Extension(auth): Extension<Arc<Auth>>,
+    Extension(trace_id): Extension<TraceId>,
+    State(state): State<Arc<AppState>>,
+) -> Result<LogoutUserResponse, ApiError> {
+    tracing::trace!("logging out user {}...", auth.user.id);
+
+    match state.sessions.remove_session(&auth.session).await {
+        Ok(_) => {
+            tracing::info!("session {} deleted", auth.session);
+            Ok(LogoutUserResponse)
+        }
+
+        Err(RepositoryError::NotFound) => {
+            tracing::warn!("session {} not found", auth.session);
+            Err(ApiError::NotFound {
+                trace_id: trace_id.clone(),
+            })
+        }
+        
+        Err(err) => {
+            tracing::error!("failed to delete session: {err}");
+            Err(ApiError::Unknown {
+                trace_id: trace_id.clone(),
+            })
+        }
+    }
 }
 
 fn validate_user(user: &LoginUserRequest) -> HashMap<String, Vec<String>> {
