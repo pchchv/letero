@@ -1,5 +1,6 @@
 use sqlx::{PgPool, query, query_as, query_scalar};
 use std::collections::HashSet;
+use futures_util::StreamExt;
 use crate::{
     error::RepositoryError,
     models::{
@@ -99,5 +100,16 @@ impl ChatsRepository for PgChatsRepository {
         .await?;
 
         Ok(chats)
+    }
+
+    async fn get_chat_members(&self, chat_id: ChatId) -> Result<Vec<UserId>, RepositoryError> {
+        let members = query_scalar!(
+            "SELECT UserId as \"user_id: _\" FROM ChatMembers WHERE ChatId = $1",
+            chat_id as _
+        )
+        .fetch_all(&self.0)
+        .await?;
+
+        Ok(members)
     }
 }
