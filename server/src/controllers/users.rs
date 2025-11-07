@@ -106,10 +106,7 @@ async fn create_session(
     for _ in 0..5 {
         tracing::trace!("generating session UID...");
         let uid = small_uid::SmallUid::new().to_string();
-
-        let expires_at =
-            OffsetDateTime::now_utc().saturating_add(Duration::seconds(SESSION_LIFETIME));
-
+        let expires_at = OffsetDateTime::now_utc().saturating_add(Duration::seconds(SESSION_LIFETIME));
         tracing::trace!("trying to save session UID {uid} for user id {user_id} in database...");
         match sessions.create_session(&uid, user_id, expires_at).await {
             Ok(_) => {
@@ -134,3 +131,60 @@ async fn create_session(
         trace_id: trace_id.clone(),
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        error::RepositoryError,
+        models::users::{LoginUserRequest, Password, Username},
+        rand::MockRandomGenerator,
+        repositories::{sessions::MockSessionsRepository, users::MockUsersRepository},
+    };
+    use std::fmt::Display;
+    use tokio::{sync::Mutex, test};
+
+    #[test]
+    async fn test_validate_user_ok() {
+        let user = LoginUserRequest {
+            username: Username::new("valid_user"),
+            password: Password::new("ValidPass123"),
+        };
+
+        let errors = validate_user(&user);
+        assert!(errors.is_empty());
+    }
+
+    #[test]
+    async fn test_validate_user_invalid_username_and_password() {
+        let user = LoginUserRequest {
+            username: Username::new(""),
+            password: Password::new(""),
+        };
+
+        let errors = validate_user(&user);
+        assert!(errors.contains_key("username"));
+        assert!(errors.contains_key("password"));
+    }
+
+    #[test]
+    async fn test_validate_user_invalid_username() {
+        let user = LoginUserRequest {
+            username: Username::new("вууу"),
+            password: Password::new("ValidPass123"),
+        };
+
+        let errors = validate_user(&user);
+        assert!(errors.contains_key("username"));
+    }
+
+    #[test]
+    async fn test_validate_user_invalid_username_length() {
+        let user = LoginUserRequest {
+            username: Username::new("0123456789012345678901234567890123456789"),
+            password: Password::new("123"),
+        };
+
+        let errors = validate_user(&user);
+        assert!(errors.contains_key("username"));
+    }
