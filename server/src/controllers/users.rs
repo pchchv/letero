@@ -192,6 +192,25 @@ async fn create_session(
     })
 }
 
+async fn get_or_create_session(
+    sessions: &dyn SessionsRepository,
+    user_id: UserId,
+    trace_id: &TraceId,
+) -> Result<String, ApiError> {
+    match sessions.get_session_by_user_id(user_id).await {
+        Ok(session) => {
+            tracing::info!("session {session} found");
+            Ok(session)
+        }
+
+        Err(err) => {
+            tracing::error!("failed to get session: {err}");
+            tracing::trace!("trying to create new session");
+            create_session(sessions, user_id, trace_id).await
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
