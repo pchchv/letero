@@ -200,7 +200,7 @@ mod tests {
     use crate::{
         error::RepositoryError,
         rand::MockRandomGenerator,
-        models::users::{LoginUserRequest, Password, Username},
+        models::users::{LoginUserRequest, Password, User, Username},
         repositories::{sessions::MockSessionsRepository, users::MockUsersRepository},
     };
 
@@ -288,6 +288,57 @@ mod tests {
 
         let errors = validate_user(&user);
         assert!(errors.contains_key("username"));
+    }
+
+    #[test]
+    async fn test_get_user_id_by_username_ok() {
+        let mut users = MockUsersRepository::new();
+        users
+            .expect_get_user_salt()
+            .returning(|_| Ok("salt".to_string()));
+        users.expect_get_user().returning(|username, password| {
+            Ok(User {
+                id: UserId::new(1),
+                username: username.into(),
+                password: password.to_string(),
+                created_at: OffsetDateTime::now_utc(),
+            })
+        });
+
+        let result = get_user_id(
+            &users,
+            &LoginUserRequest {
+                username: Username::new("valid_user"),
+                password: Password::new("ValidPass123"),
+            },
+            &TraceId::new(),
+        )
+        .await;
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    async fn test_get_user_id_by_username_not_found() {
+        let mut users = MockUsersRepository::new();
+        users
+            .expect_get_user_salt()
+            .returning(|_| Ok("salt".to_string()));
+        users
+            .expect_get_user()
+            .returning(|_, _| Err(RepositoryError::NotFound));
+
+        let result = get_user_id(
+            &users,
+            &LoginUserRequest {
+                username: Username::new("valid_user"),
+                password: Password::new("ValidPass123"),
+            },
+            &TraceId::new(),
+        )
+        .await;
+
+        assert!(matches!(result, Err(ApiError::NotFound { .. })));
     }
 
     #[test]
