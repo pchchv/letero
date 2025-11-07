@@ -137,12 +137,52 @@ mod tests {
     use super::*;
     use crate::{
         error::RepositoryError,
-        models::users::{LoginUserRequest, Password, Username},
         rand::MockRandomGenerator,
-        repositories::{sessions::MockSessionsRepository, users::MockUsersRepository},
+        repositories::users::MockUsersRepository,
+        models::users::{LoginUserRequest, Password, Username},
     };
-    use std::fmt::Display;
     use tokio::{sync::Mutex, test};
+
+        #[test]
+    async fn test_create_user_ok() {
+        let mut rand = MockRandomGenerator::new();
+        rand.expect_get_salt().returning(|| "salt".to_string());
+        let mut users = MockUsersRepository::new();
+        users
+            .expect_create_user()
+            .returning(|_, _| Ok(UserId::new(1)));
+
+        let user = LoginUserRequest {
+            username: Username::new("valid_user"),
+            password: Password::new("ValidPass123"),
+        };
+
+        let result = create_user(&Mutex::new(rand), &users, &user, &TraceId::new())
+            .await
+            .expect("failed to create user");
+        assert_eq!(result, 1);
+    }
+
+    #[test]
+    async fn test_create_user_conflict() {
+        let rand = Mutex::new(MockRandomGenerator::new());
+        rand.lock()
+            .await
+            .expect_get_salt()
+            .returning(|| "salt".to_string());
+        let mut users = MockUsersRepository::new();
+        users
+            .expect_create_user()
+            .returning(|_, _| Err(RepositoryError::Conflict));
+
+        let user = LoginUserRequest {
+            username: Username::new("valid_user"),
+            password: Password::new("ValidPass123"),
+        };
+
+        let result = create_user(&rand, &users, &user, &TraceId::new()).await;
+        assert!(matches!(result, Err(ApiError::Conflict { .. })));
+    }
 
     #[test]
     async fn test_validate_user_ok() {
@@ -188,3 +228,4 @@ mod tests {
         let errors = validate_user(&user);
         assert!(errors.contains_key("username"));
     }
+}
