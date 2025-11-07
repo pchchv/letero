@@ -1,14 +1,14 @@
-use axum::{extract::State, Extension, Json};
+use axum::{extract::{Path, State}, Extension, Json};
 use std::{collections::HashMap, sync::Arc};
 use time::{Duration, OffsetDateTime};
 use crate::{
-    error::{ApiError, RepositoryError},
     repositories::{sessions::SessionsRepository, users::UsersRepository},
-    services::trace::TraceId,
+    error::{ApiError, RepositoryError},
+    services::{auth::Auth, trace::TraceId},
     rand::RandomGenerator,
     state::AppState,
     models::users::{
-        LoginUserRequest, LoginUserResponse, PasswordHash, UserId, Username, SESSION_LIFETIME
+        GetUserResponse, LoginUserRequest, LoginUserResponse, PasswordHash, UserId, Username, SESSION_LIFETIME
     },
 };
 
@@ -45,6 +45,53 @@ pub async fn new_user(
     let session = create_session(&*state.sessions, user_id, &trace_id).await?;
 
     Ok(LoginUserResponse::new(user_id, session))
+}
+
+/// Get user
+#[utoipa::path(
+    get,
+    path = "/users/{id}",
+    tag = "users",
+    params(
+        ("id" = UserId, Path, description = "User id")
+    ),
+    responses(
+        (status = OK, description = "User", body = GetUserResponse),
+        (status = NOT_FOUND, description = "User not found", body = ApiError),
+        (status = INTERNAL_SERVER_ERROR, description = "Internal server error", body = ApiError)
+    ),
+    security(("auth" = []))
+)]
+pub async fn get_user(
+    Extension(auth): Extension<Arc<Auth>>,
+    Extension(trace_id): Extension<TraceId>,
+    State(state): State<Arc<AppState>>,
+    Path(user_id): Path<UserId>,
+) -> Result<GetUserResponse, ApiError> {
+    if user_id == 0 {
+        Ok(GetUserResponse { user: auth.user.clone().into() })
+    } else {
+        match state.users.get_user_by_id(&user_id).await {
+            Ok(user) => {
+                tracing::info!("user {} found", user.username);
+                Ok(GetUserResponse { user: user.into() })
+            }
+
+            Err(RepositoryError::NotFound) => {
+                tracing::warn!("user {} not found", user_id);
+                Err(ApiError::NotFound {
+                    trace_id: trace_id.clone(),
+                })
+            }
+            
+            Err(err) => {
+                tracing::error!("failed to get user: {}", err);
+                Err(ApiError::Unknown {
+                    trace_id: trace_id.clone(),
+                })
+            }
+        }
+    }
 }
 
 fn validate_user(user: &LoginUserRequest) -> HashMap<String, Vec<String>> {
