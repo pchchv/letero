@@ -8,7 +8,7 @@ use crate::{
     rand::RandomGenerator,
     state::AppState,
     models::users::{
-        LoginUserRequest, LoginUserResponse, PasswordHash, UserId, SESSION_LIFETIME
+        LoginUserRequest, LoginUserResponse, PasswordHash, UserId, Username, SESSION_LIFETIME
     },
 };
 
@@ -91,6 +91,66 @@ async fn create_user(
         }
         Err(err) => {
             tracing::error!("failed to create user: {}", err);
+            Err(ApiError::Unknown {
+                trace_id: trace_id.clone(),
+            })
+        }
+    }
+}
+
+async fn get_user_salt(
+    users: &dyn UsersRepository,
+    username: &Username,
+    trace_id: &TraceId,
+) -> Result<String, ApiError> {
+    match users.get_user_salt(username).await {
+        Ok(salt) => {
+            tracing::info!("user {} salt found", **username);
+            Ok(salt)
+        }
+
+        Err(RepositoryError::NotFound) => {
+            tracing::warn!("user {} not found", **username);
+            Err(ApiError::NotFound {
+                trace_id: trace_id.clone(),
+            })
+        }
+
+        Err(err) => {
+            tracing::error!("failed to get user salt: {}", err);
+            Err(ApiError::Unknown {
+                trace_id: trace_id.clone(),
+            })
+        }
+    }
+}
+
+async fn get_user_id(
+    users: &dyn UsersRepository,
+    user: &LoginUserRequest,
+    trace_id: &TraceId,
+) -> Result<UserId, ApiError> {
+    tracing::trace!("getting user salt...");
+
+    let salt = get_user_salt(users, &user.username, trace_id).await?;
+    let password_hash = PasswordHash::new(&user.password, &salt);
+
+    tracing::trace!("getting user id...");
+    match users.get_user(&user.username, password_hash).await {
+        Ok(user) => {
+            tracing::info!("user {} found", user.username);
+            Ok(user.id)
+        }
+
+        Err(RepositoryError::NotFound) => {
+            tracing::warn!("user {} not found", *user.username);
+            Err(ApiError::NotFound {
+                trace_id: trace_id.clone(),
+            })
+        }
+
+        Err(err) => {
+            tracing::error!("failed to get user: {}", err);
             Err(ApiError::Unknown {
                 trace_id: trace_id.clone(),
             })
