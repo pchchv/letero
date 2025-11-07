@@ -94,6 +94,33 @@ pub async fn get_user(
     }
 }
 
+/// Login user
+#[utoipa::path(
+    post,
+    path = "/login",
+    tag = "users", 
+    request_body(
+        content = LoginUserRequest, 
+        description = "User credentials"
+    ),
+    responses(
+        (status = OK, description = "User logged in", body = LoginUserResponse),
+        (status = BAD_REQUEST, description = "Invalid user credentials", body = ApiError),
+        (status = INTERNAL_SERVER_ERROR, description = "Internal server error", body = ApiError)
+    )
+)]
+pub async fn login_user(
+    Extension(trace_id): Extension<TraceId>,
+    State(state): State<Arc<AppState>>,
+    Json(user): Json<LoginUserRequest>,
+) -> Result<LoginUserResponse, ApiError> {
+    tracing::trace!("getting user id by name {}...", *user.username);
+    let user_id = get_user_id(&*state.users, &user, &trace_id).await?;
+    let session = get_or_create_session(&*state.sessions, user_id, &trace_id).await?;
+
+    Ok(LoginUserResponse::new(user_id, session))
+}
+
 fn validate_user(user: &LoginUserRequest) -> HashMap<String, Vec<String>> {
     let mut errors = HashMap::new();
     let username_errors = user.username.validate();
@@ -270,7 +297,7 @@ mod tests {
         repositories::{sessions::MockSessionsRepository, users::MockUsersRepository},
     };
 
-        #[test]
+    #[test]
     async fn test_create_user_ok() {
         let mut rand = MockRandomGenerator::new();
         rand.expect_get_salt().returning(|| "salt".to_string());
