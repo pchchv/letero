@@ -135,13 +135,14 @@ async fn create_session(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fmt::Display;
+    use tokio::{sync::Mutex, test};
     use crate::{
         error::RepositoryError,
         rand::MockRandomGenerator,
-        repositories::users::MockUsersRepository,
         models::users::{LoginUserRequest, Password, Username},
+        repositories::{sessions::MockSessionsRepository, users::MockUsersRepository},
     };
-    use tokio::{sync::Mutex, test};
 
         #[test]
     async fn test_create_user_ok() {
@@ -227,5 +228,71 @@ mod tests {
 
         let errors = validate_user(&user);
         assert!(errors.contains_key("username"));
+    }
+
+    #[test]
+    async fn test_create_session_ok() {
+        let mut sessions = MockSessionsRepository::new();
+        sessions.expect_create_session().returning(|_, _, _| Ok(()));
+
+        let result = create_session(&sessions, UserId::new(1), &TraceId::new()).await;
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    async fn test_create_session_conflict() {
+        let mut sessions = MockSessionsRepository::new();
+        sessions
+            .expect_create_session()
+            .returning(|_, _, _| Err(RepositoryError::Conflict));
+
+        let result = create_session(&sessions, UserId::new(1), &TraceId::new()).await;
+        assert!(matches!(result, Err(ApiError::Conflict { .. })));
+    }
+
+    #[test]
+    async fn test_create_session_unknown() {
+        #[derive(Debug)]
+        struct UnknownSqlxError;
+
+        impl Display for UnknownSqlxError {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                write!(f, "unknown sqlx error")
+            }
+        }
+
+        impl std::error::Error for UnknownSqlxError {}
+
+        impl sqlx::error::DatabaseError for UnknownSqlxError {
+            fn message(&self) -> &str {
+                todo!()
+            }
+
+            fn as_error(&self) -> &(dyn std::error::Error + Send + Sync + 'static) {
+                todo!()
+            }
+
+            fn as_error_mut(&mut self) -> &mut (dyn std::error::Error + Send + Sync + 'static) {
+                todo!()
+            }
+
+            fn into_error(self: Box<Self>) -> Box<dyn std::error::Error + Send + Sync + 'static> {
+                todo!()
+            }
+
+            fn kind(&self) -> sqlx::error::ErrorKind {
+                sqlx::error::ErrorKind::Other
+            }
+        }
+
+        let mut sessions = MockSessionsRepository::new();
+        sessions.expect_create_session().returning(|_, _, _| {
+            Err(RepositoryError::Unknown(sqlx::Error::Database(Box::new(
+                UnknownSqlxError,
+            ))))
+        });
+
+        let result = create_session(&sessions, UserId::new(1), &TraceId::new()).await;
+        assert!(matches!(result, Err(ApiError::Unknown { .. })));
     }
 }
