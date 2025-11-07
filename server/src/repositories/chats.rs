@@ -1,3 +1,4 @@
+use sqlx::PgPool;
 use std::collections::HashSet;
 use crate::{
     error::RepositoryError,
@@ -21,4 +22,12 @@ pub trait ChatsRepository: Send + Sync {
     async fn get_user_chats_ids(&self, user_id: UserId)
     -> Result<HashSet<ChatId>, RepositoryError>;
     async fn get_chat_members(&self, chat_id: ChatId) -> Result<Vec<UserId>, RepositoryError>;
+}
+
+pub struct PgChatsRepository(PgPool);
+
+impl PgChatsRepository {
+    pub fn new(pool: PgPool) -> Self {
+        Self(pool)
+    }
 }
