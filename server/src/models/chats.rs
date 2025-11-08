@@ -110,3 +110,12 @@ impl IntoResponse for NewChatResponse {
         (StatusCode::CREATED, Json(self)).into_response()
     }
 }
+
+#[derive(ToSchema)]
+pub struct RemoveChatResponse;
+
+impl IntoResponse for RemoveChatResponse {
+    fn into_response(self) -> Response {
+        StatusCode::NO_CONTENT.into_response()
+    }
+}
