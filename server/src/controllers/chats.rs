@@ -1,17 +1,33 @@
-use axum::{Json, Extension, extract::State};
-use std::{sync::Arc, collections::HashMap};
+use std::{
+    sync::Arc,
+    collections::HashMap,
+};
+use axum::{
+    Json,
+    Extension,
+    extract::{State, Path},
+};
 use crate::{
     AppState,
     error::ApiError,
-    services::{auth::Auth, trace::TraceId},
+    services::{
+        auth::Auth,
+        trace::TraceId,
+    },
     models::{
-        events::{ChatEvent, SseEvent, SseEventType},
         users::UserId,
+        events::{
+            SseEvent,
+            ChatEvent,
+            SseEventType,
+        },
         chats::{
+            ChatId,
             ChatTitle,
             NewChatRequest,
+            NewChatResponse,
             GetChatsResponse,
-            NewChatResponse
+            RemoveChatResponse,
         },
     },
 };
@@ -88,7 +104,7 @@ pub async fn new_chat(
             tracing::trace!("chat {id} created");
             id
         }
-        
+
         Err(err) => {
             tracing::error!("failed to create chat: {err}");
             return Err(ApiError::Unknown { trace_id });
@@ -114,6 +130,38 @@ pub async fn new_chat(
     }
 
     Ok(NewChatResponse::new(chat_id))
+}
+
+/// Remove chat
+#[utoipa::path(
+    delete,
+    path = "/chats/{chat_id}",
+    tag = "chats",
+    params(
+        ("chat_id" = ChatId, Path, description = "Chat id")
+    ),
+    responses(
+        (status = NO_CONTENT, description = "Chat removed", body = RemoveChatResponse),
+        (status = INTERNAL_SERVER_ERROR, description = "Internal server error", body = ApiError, example = json!({"type": "Internal", "trace_id": "aa23dcd356c"}))
+    ),
+    security(("auth" = []))
+)]
+pub async fn remove_chat(
+    Extension(_): Extension<Arc<Auth>>,
+    Extension(trace_id): Extension<TraceId>,
+    State(state): State<Arc<AppState>>,
+    Path(chat_id): Path<ChatId>,
+) -> Result<RemoveChatResponse, ApiError> {
+    match state.chats.remove_chat(chat_id).await {
+        Ok(_) => {
+            tracing::trace!("chat {} removed", chat_id);
+            Ok(RemoveChatResponse)
+        }
+        Err(err) => {
+            tracing::error!("failed to remove chat: {err}");
+            Err(ApiError::Unknown { trace_id })
+        }
+    }
 }
 
 fn validate_chat(title: &ChatTitle) -> HashMap<String, Vec<String>> {
