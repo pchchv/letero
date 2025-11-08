@@ -1,6 +1,7 @@
 use std::ops::Deref;
 use utoipa::ToSchema;
 use serde::{Deserialize, Serialize};
+use axum::{Json, http::StatusCode, response::{IntoResponse, Response}};
 use crate::models::users::UserId;
 
 #[derive(Serialize, ToSchema)]
@@ -82,4 +83,13 @@ impl Deref for ChatId {
 pub struct NewChatRequest {
     pub title: ChatTitle,
     pub users_ids: Option<Vec<UserId>>,
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct GetChatsResponse(pub Vec<Chat>);
+
+impl IntoResponse for GetChatsResponse {
+    fn into_response(self) -> Response {
+        (StatusCode::OK, Json(self)).into_response()
+    }
 }
