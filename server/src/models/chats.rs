@@ -1,6 +1,7 @@
 use std::ops::Deref;
 use utoipa::ToSchema;
 use serde::{Deserialize, Serialize};
+use crate::models::users::UserId;
 
 #[derive(Serialize, ToSchema)]
 pub struct Chat {
@@ -75,4 +76,10 @@ impl Deref for ChatId {
     fn deref(&self) -> &Self::Target {
         &self.0
     }
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct NewChatRequest {
+    pub title: ChatTitle,
+    pub users_ids: Option<Vec<UserId>>,
 }
