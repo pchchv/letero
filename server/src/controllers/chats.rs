@@ -1,9 +1,10 @@
 use::std::sync::Arc;
+use std::collections::HashMap;
 use axum::{Extension, extract::State};
 use crate::{
     AppState,
     error::ApiError,
-    models::chats::GetChatsResponse,
+    models::{users::UserId, chats::{ChatTitle, GetChatsResponse}},
     services::{auth::Auth, trace::TraceId},
 };
 
@@ -37,4 +38,21 @@ pub async fn get_chats(
     };
 
     Ok(GetChatsResponse(chats))
+}
+
+fn validate_chat(title: &ChatTitle) -> HashMap<String, Vec<String>> {
+    let mut errors = HashMap::new();
+    let title_errors = title.validate();
+    if !title_errors.is_empty() {
+        errors.insert("title".to_owned(), title_errors);
+    }
+
+    errors
+}
+
+fn merge_ids(user_id: UserId, ids: Vec<UserId>) -> Vec<UserId> {
+    let mut users = Vec::with_capacity(ids.len() + 1);
+    users.push(user_id);
+    users.extend(ids);
+    users
 }
