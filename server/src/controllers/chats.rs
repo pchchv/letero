@@ -1,10 +1,19 @@
-use axum::{Extension, extract::State};
+use axum::{Json, Extension, extract::State};
 use std::{sync::Arc, collections::HashMap};
 use crate::{
     AppState,
     error::ApiError,
-    models::{users::UserId, chats::{ChatTitle, GetChatsResponse}},
     services::{auth::Auth, trace::TraceId},
+    models::{
+        events::{ChatEvent, SseEvent, SseEventType},
+        users::UserId,
+        chats::{
+            ChatTitle,
+            NewChatRequest,
+            GetChatsResponse,
+            NewChatResponse
+        },
+    },
 };
 
 /// Get user chats
@@ -37,6 +46,74 @@ pub async fn get_chats(
     };
 
     Ok(GetChatsResponse(chats))
+}
+
+/// Create new chat
+#[utoipa::path(
+    post,
+    path = "/chats",
+    tag = "chats",
+    request_body = NewChatRequest,
+    responses(
+        (status = OK, description = "Chat created", body = NewChatResponse),
+        (status = BAD_REQUEST, description = "Validation error", example = json!({"type": "Validation", "fields": {"title": "Chat title is required"}, "trace_id": "aa23dcd356c"})),
+        (status = INTERNAL_SERVER_ERROR, description = "Internal server error", example = json!({"type": "Internal", "trace_id": "aa23dcd356c"}))
+    ),
+    security(("auth" = []))
+)]
+pub async fn new_chat(
+    Extension(auth): Extension<Arc<Auth>>,
+    Extension(trace_id): Extension<TraceId>,
+    State(state): State<Arc<AppState>>,
+    Json(chat): Json<NewChatRequest>,
+) -> Result<NewChatResponse, ApiError> {
+    let errors = validate_chat(&chat.title);
+    if !errors.is_empty() {
+        return Err(ApiError::Validation {
+            fields: errors,
+            trace_id,
+        });
+    }
+
+    let users_ids = if let Some(users_ids) = chat.users_ids
+        && !users_ids.is_empty()
+    {
+        merge_ids(auth.user.id, users_ids)
+    } else {
+        vec![auth.user.id]
+    };
+
+    let chat_id = match state.chats.create_chat(&chat.title, &users_ids).await {
+        Ok(id) => {
+            tracing::trace!("chat {id} created");
+            id
+        }
+        
+        Err(err) => {
+            tracing::error!("failed to create chat: {err}");
+            return Err(ApiError::Unknown { trace_id });
+        }
+    };
+
+    for member in &users_ids {
+        if *member == auth.user.id {
+            continue;
+        }
+
+        if let Some(member) = state.events.get(member)
+            && let Err(err) = member.send(SseEvent::new(
+                SseEventType::Chat,
+                ChatEvent {
+                    title: ChatTitle::new(chat.title.clone()),
+                    users_ids: users_ids.clone(),
+                    chat_id,
+                },
+            )) {
+                tracing::error!("failed to send event: {err}");
+            }
+    }
+
+    Ok(NewChatResponse::new(chat_id))
 }
 
 fn validate_chat(title: &ChatTitle) -> HashMap<String, Vec<String>> {
