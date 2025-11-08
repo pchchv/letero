@@ -1,6 +1,5 @@
-use::std::sync::Arc;
-use std::collections::HashMap;
 use axum::{Extension, extract::State};
+use std::{sync::Arc, collections::HashMap};
 use crate::{
     AppState,
     error::ApiError,
