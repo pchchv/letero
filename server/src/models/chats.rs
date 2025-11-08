@@ -2,6 +2,13 @@ use std::ops::Deref;
 use utoipa::ToSchema;
 use serde::{Deserialize, Serialize};
 
+#[derive(Serialize, ToSchema)]
+pub struct Chat {
+    pub id: ChatId,
+    pub title: ChatTitle,
+    pub users_ids: Vec<UserId>,
+}
+
 #[derive(Deserialize, sqlx::Type, Serialize, ToSchema)]
 #[sqlx(transparent)]
 pub struct ChatTitle(String);
