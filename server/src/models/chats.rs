@@ -93,3 +93,20 @@ impl IntoResponse for GetChatsResponse {
         (StatusCode::OK, Json(self)).into_response()
     }
 }
+
+#[derive(Serialize, ToSchema)]
+pub struct NewChatResponse {
+    pub chat_id: ChatId,
+}
+
+impl NewChatResponse {
+    pub fn new(chat_id: ChatId) -> Self {
+        Self { chat_id }
+    }
+}
+
+impl IntoResponse for NewChatResponse {
+    fn into_response(self) -> Response {
+        (StatusCode::CREATED, Json(self)).into_response()
+    }
+}
