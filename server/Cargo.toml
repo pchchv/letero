@@ -23,6 +23,7 @@ rand = { version = "0.9.2", default-features = false, features = ["small_rng"] }
 cookie = "0.18.1"
 futures-util = "0.3.31"
 tokio-stream = "0.1.17"
+strum = { version = "0.27.2", features = ["derive"] }
 
 [dev-dependencies]
 mockall = "0.13.1"
