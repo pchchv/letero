@@ -18,3 +18,10 @@ impl SseEvent {
         Self { event_type, data }
     }
 }
+
+#[derive(serde::Serialize)]
+pub struct ChatEvent {
+    pub chat_id: crate::models::chats::ChatId,
+    pub title: crate::models::chats::ChatTitle,
+    pub users_ids: Vec<crate::models::users::UserId>,
+}
