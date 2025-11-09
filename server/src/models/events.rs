@@ -1,4 +1,7 @@
 use strum::AsRefStr;
+use serde::Serialize;
+use serde_json::to_string;
+use crate::models::{users::UserId, chats::{ChatId, ChatTitle}};
 
 #[derive(Clone, AsRefStr)]
 pub enum SseEventType {
@@ -13,15 +16,15 @@ pub struct SseEvent {
 }
 
 impl SseEvent {
-    pub fn new(event_type: SseEventType, data: impl serde::Serialize) -> Self {
-        let data = serde_json::to_string(&data).expect("failed to serialize event data");
+    pub fn new(event_type: SseEventType, data: impl Serialize) -> Self {
+        let data = to_string(&data).expect("failed to serialize event data");
         Self { event_type, data }
     }
 }
 
-#[derive(serde::Serialize)]
+#[derive(Serialize)]
 pub struct ChatEvent {
-    pub chat_id: crate::models::chats::ChatId,
-    pub title: crate::models::chats::ChatTitle,
-    pub users_ids: Vec<crate::models::users::UserId>,
+    pub chat_id: ChatId,
+    pub title: ChatTitle,
+    pub users_ids: Vec<UserId>,
 }
