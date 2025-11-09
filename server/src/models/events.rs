@@ -1,7 +1,11 @@
 use strum::AsRefStr;
 use serde::Serialize;
 use serde_json::to_string;
-use crate::models::{users::UserId, chats::{ChatId, ChatTitle}};
+use crate::models::{
+    users::UserId,
+    messages::Message,
+    chats::{ChatId, ChatTitle}
+};
 
 #[derive(Clone, AsRefStr)]
 pub enum SseEventType {
@@ -27,4 +31,11 @@ pub struct ChatEvent {
     pub chat_id: ChatId,
     pub title: ChatTitle,
     pub users_ids: Vec<UserId>,
+}
+
+#[derive(Serialize)]
+pub struct MessageEvent {
+    pub message: Message,
+    pub chat_id: ChatId,
+    pub user_id: UserId,
 }
