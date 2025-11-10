@@ -1,4 +1,5 @@
 use crate::models::{chats::ChatId, users::UserId};
+use axum::{Json, http::StatusCode, response::IntoResponse};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use std::ops::Deref;
@@ -28,5 +29,17 @@ impl Deref for MessageId {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct GetMessagesResponse {
+    pub messages: Vec<Message>,
+    pub has_more: bool,
+}
+
+impl IntoResponse for GetMessagesResponse {
+    fn into_response(self) -> axum::response::Response {
+        (StatusCode::OK, Json(self)).into_response()
     }
 }
