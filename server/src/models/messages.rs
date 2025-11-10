@@ -79,3 +79,8 @@ impl IntoResponse for NewMessageResponse {
         (StatusCode::CREATED, Json(self)).into_response()
     }
 }
+
+#[derive(Deserialize, ToSchema)]
+pub struct NewMessageRequest {
+    pub content: MessageContent
+}
