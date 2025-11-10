@@ -84,3 +84,9 @@ impl IntoResponse for NewMessageResponse {
 pub struct NewMessageRequest {
     pub content: MessageContent
 }
+
+#[derive(Deserialize)]
+pub struct GetMessagesParams {
+    pub limit: i64,
+    pub last_message_id: Option<MessageId>,
+}
