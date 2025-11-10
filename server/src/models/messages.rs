@@ -43,3 +43,14 @@ impl IntoResponse for GetMessagesResponse {
         (StatusCode::OK, Json(self)).into_response()
     }
 }
+
+#[derive(Serialize, ToSchema)]
+pub struct NewMessageResponse {
+    pub message_id: MessageId,
+}
+
+impl IntoResponse for NewMessageResponse {
+    fn into_response(self) -> axum::response::Response {
+        (StatusCode::CREATED, Json(self)).into_response()
+    }
+}
