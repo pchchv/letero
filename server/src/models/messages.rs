@@ -32,6 +32,31 @@ impl Deref for MessageId {
     }
 }
 
+#[derive(Deserialize, ToSchema)]
+pub struct MessageContent(String);
+
+impl MessageContent {
+    pub fn new(content: String) -> Self {
+        Self(content)
+    }
+
+    pub fn validate(&self) -> Vec<String> {
+        let mut errors = Vec::new();
+        let trim = self.0.trim();
+        if trim.is_empty() {
+            errors.push("Content is empty".to_string());
+        }
+
+        errors
+    }
+}
+
+impl AsRef<str> for MessageContent {
+    fn as_ref(&self) -> &str {
+        &self.0
+    }
+}
+
 #[derive(Serialize, ToSchema)]
 pub struct GetMessagesResponse {
     pub messages: Vec<Message>,
