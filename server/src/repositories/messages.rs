@@ -1,3 +1,4 @@
+use sqlx::PgPool;
 use crate::{
     error::RepositoryError,
     models::{
@@ -23,4 +24,12 @@ pub trait MessagesRepository: Send + Sync {
         user_id: UserId,
         content: &str,
     ) -> Result<Message, RepositoryError>;
+}
+
+pub struct PgMessagesRepository(PgPool);
+
+impl PgMessagesRepository {
+    pub fn new(pool: PgPool) -> Self {
+        PgMessagesRepository(pool)
+    }
 }
