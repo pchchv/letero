@@ -1,6 +1,7 @@
 use crate::{
     rand::RandomGenerator,
     repositories::{
+        chats::{ChatsRepository, PgChatsRepository},
         sessions::{SessionsRepository, PgSessionsRepository},
         users::{UsersRepository, PgUsersRepository},
     },
@@ -12,13 +13,15 @@ pub struct AppState {
     pub random: Arc<Mutex<dyn RandomGenerator>>,
     pub users: Arc<dyn UsersRepository>,
     pub sessions: Arc<dyn SessionsRepository>,
+    pub chats: Arc<dyn ChatsRepository>,
 }
 
 impl AppState {
     pub fn new(random: Arc<Mutex<dyn RandomGenerator>>, pool: sqlx::PgPool) -> Self {
         Self {
             users: Arc::new(PgUsersRepository::new(pool.clone())),
-            sessions: Arc::new(PgSessionsRepository::new(pool)),
+            sessions: Arc::new(PgSessionsRepository::new(pool.clone())),
+            chats: Arc::new(PgChatsRepository::new(pool.clone())),
             random,
         }
     }
