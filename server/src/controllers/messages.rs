@@ -110,3 +110,37 @@ async fn check_chat_access(chats: &dyn ChatsRepository, user_id: UserId, chat_id
 
     chats.contains(&chat_id)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tokio::test;
+    use std::collections::HashSet;
+    use crate::repositories::chats::MockChatsRepository;
+
+    #[test]
+    async fn test_check_chat_access_ok() {
+        let mut chats = MockChatsRepository::new();
+        chats.expect_get_user_chats_ids().returning(|_| {
+            let set = HashSet::from([ChatId::new(1), ChatId::new(2), ChatId::new(3)]);
+            Ok(set)
+        });
+        let user_id = UserId::new(1);
+        let chat_id = ChatId::new(2);
+
+        assert!(check_chat_access(&chats, user_id, chat_id).await);
+    }
+
+    #[test]
+    async fn test_check_chat_access_fail() {
+        let mut chats = MockChatsRepository::new();
+        chats.expect_get_user_chats_ids().returning(|_| {
+            let set = HashSet::from([ChatId::new(1), ChatId::new(2), ChatId::new(3)]);
+            Ok(set)
+        });
+        let user_id = UserId::new(1);
+        let chat_id = ChatId::new(4);
+
+        assert!(!check_chat_access(&chats, user_id, chat_id).await);
+    }
+}
