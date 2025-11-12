@@ -24,7 +24,7 @@ async fn main() {
         .route_layer(middleware::from_fn(trace));
 
     let port = 4000;
-    let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, port))
+    let listener = TcpListener::bind((Ipv4Addr::UNSPECIFIED, port))
         .await
         .expect("failed to bind port");
 
