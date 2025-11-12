@@ -1,5 +1,9 @@
-use axum::{Extension, Json, extract::{Path, State}};
 use std::{collections::HashMap, sync::Arc};
+use axum::{
+    Json,
+    Extension,
+    extract::{Path, State, Query}
+};
 use crate::{
     AppState,
     error::ApiError,
@@ -8,10 +12,22 @@ use crate::{
     models::{
         chats::ChatId,
         users::UserId,
-        events::{MessageEvent, SseEvent, SseEventType},
-        messages::{NewMessageRequest, NewMessageResponse, MessageId},
+        events::{
+            SseEvent,
+            SseEventType,
+            MessageEvent,
+        },
+        messages::{
+            MessageId,
+            GetMessagesParams,
+            NewMessageRequest,
+            NewMessageResponse,
+            GetMessagesResponse,
+        },
     },
 };
+
+const MAX_MESSAGES: i64 = 100;
 
 /// Send message to chat
 #[utoipa::path(
@@ -109,6 +125,56 @@ async fn check_chat_access(chats: &dyn ChatsRepository, user_id: UserId, chat_id
     };
 
     chats.contains(&chat_id)
+}
+
+// /// Get chat messages
+#[utoipa::path(
+    get,
+    path = "/chats/{chat_id}",
+    tag = "messages",
+    params(
+        ("limit" = i64, Query, description = "Number of messages to return, max 100"),
+        ("last_message_id" = Option<MessageId>, Query, description = "Last message id to return"),
+        ("chat_id" = ChatId, Path, description = "Chat id")
+    ),
+    responses(
+        (status = OK, description = "Messages ", body = GetMessagesResponse),
+        (status = FORBIDDEN, description = "Forbidden", example = json!({"type": "Forbidden", "trace_id": TraceId::new()}))
+    ),
+    security(("auth" = []))
+)]
+pub async fn get_messages(
+    Extension(auth): Extension<Arc<Auth>>,
+    Extension(trace_id): Extension<TraceId>,
+    State(state): State<Arc<AppState>>,
+    Path(chat_id): Path<ChatId>,
+    Query(params): Query<GetMessagesParams>,
+) -> Result<GetMessagesResponse, ApiError> {
+    if !check_chat_access(&*state.chats, auth.user.id, chat_id).await {
+        tracing::error!("forbidden");
+        return Err(ApiError::Forbidden { trace_id });
+    }
+
+    let limit = if params.limit > MAX_MESSAGES {
+        MAX_MESSAGES
+    } else {
+        params.limit
+    };
+
+    let mut messages = state
+        .messages
+        .get_messages(chat_id, limit + 1, params.last_message_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("failed to get messages: {e}");
+            ApiError::Unknown { trace_id }
+        })?;
+
+    let has_more = messages.len() > limit as usize;
+
+    messages.truncate(limit as usize);
+
+    Ok(GetMessagesResponse { messages, has_more })
 }
 
 #[cfg(test)]
