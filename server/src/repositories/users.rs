@@ -6,6 +6,7 @@ pub trait UsersRepository: Send + Sync {
     async fn create_user(&self, username: &str, password: PasswordHash) -> Result<UserId, RepositoryError>;
     async fn get_user(&self, username: &str, password: PasswordHash) -> Result<User, RepositoryError>;
     async fn get_user_by_id(&self, id: &UserId) -> Result<User, RepositoryError>;
+    async fn search_users_by_username(&self, username: &str) -> Result<Vec<User>, RepositoryError>;
 }
 
 pub struct PgUsersRepository(sqlx::PgPool);
@@ -48,6 +49,34 @@ impl UsersRepository for PgUsersRepository {
         let result = sqlx::query_as!(User, "SELECT Id, Name as username, Password, CreatedAt as created_at FROM Users WHERE Id = $1", **id)
             .fetch_one(&self.0)
             .await?;
+
+        Ok(result)
+    }
+
+    async fn search_users_by_username(&self, username: &str) -> Result<Vec<User>, RepositoryError> {
+        let result = sqlx::query!( 
+                "SELECT *, similarity(name, $1) AS sim 
+                FROM Users 
+                WHERE Name % $1
+                ORDER BY sim DESC
+                LIMIT 5", username)
+            .fetch(&self.0)
+            .filter_map(|row| {
+                match row {
+                    Ok(row) => Some(User {
+                        id: UserId::new(row.id),
+                        username: row.name,
+                        password: row.password,
+                        created_at: row.createdat,
+                    }),
+                    Err(err) => {
+                        tracing::error!("failed to search users: {}", err);
+                        None
+                    }
+                }
+            })
+            .collect::<Vec<_>>()
+            .await;
 
         Ok(result)
     }
