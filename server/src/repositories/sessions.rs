@@ -10,6 +10,7 @@ pub trait SessionsRepository: Send + Sync {
         user_id: UserId,
         expires_at: OffsetDateTime,
     ) -> Result<(), RepositoryError>;
+    async fn get_session(&self, uid: &str) -> Result<i32, RepositoryError>;
 }
 
 pub struct PgSessionsRepository(sqlx::PgPool);
@@ -38,5 +39,13 @@ impl SessionsRepository for PgSessionsRepository {
         .await?;
 
         Ok(())
+    }
+
+    async fn get_session(&self, uid: &str) -> Result<i32, RepositoryError> {
+        let row = sqlx::query!("SELECT UserId FROM Sessions WHERE Uid = $1", uid)
+            .fetch_one(&self.0)
+            .await?;
+
+        Ok(row.userid)
     }
 }
