@@ -12,6 +12,7 @@ pub trait SessionsRepository: Send + Sync {
     ) -> Result<(), RepositoryError>;
     async fn get_session(&self, uid: &str) -> Result<i32, RepositoryError>;
     async fn get_session_by_user_id(&self, user_id: UserId) -> Result<String, RepositoryError>;
+    async fn remove_session(&self, uid: &str) -> Result<(), RepositoryError>;
 }
 
 pub struct PgSessionsRepository(sqlx::PgPool);
@@ -54,5 +55,13 @@ impl SessionsRepository for PgSessionsRepository {
             .fetch_one(&self.0)
             .await?;
         Ok(uid)
+    }
+
+
+    async fn remove_session(&self, uid: &str) -> Result<(), RepositoryError> {
+        sqlx::query!("DELETE FROM Sessions WHERE Uid = $1", uid)
+            .execute(&self.0)
+            .await?;
+        Ok(())
     }
 }
