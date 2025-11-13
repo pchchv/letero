@@ -47,6 +47,7 @@ impl SessionsRepository for PgSessionsRepository {
         let row = sqlx::query!("SELECT UserId FROM Sessions WHERE Uid = $1", uid)
             .fetch_one(&self.0)
             .await?;
+
         Ok(row.userid)
     }
 
@@ -54,6 +55,7 @@ impl SessionsRepository for PgSessionsRepository {
         let uid = sqlx::query_scalar!("SELECT Uid FROM Sessions WHERE UserId = $1", user_id as _)
             .fetch_one(&self.0)
             .await?;
+
         Ok(uid)
     }
 
@@ -62,6 +64,7 @@ impl SessionsRepository for PgSessionsRepository {
         sqlx::query!("DELETE FROM Sessions WHERE Uid = $1", uid)
             .execute(&self.0)
             .await?;
+
         Ok(())
     }
 }

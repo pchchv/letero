@@ -68,6 +68,7 @@ impl ChatsRepository for PgChatsRepository {
         sqlx::query!("DELETE FROM Chats WHERE Id = $1", chat_id as _)
             .execute(&self.0)
             .await?;
+
         Ok(())
     }
 
