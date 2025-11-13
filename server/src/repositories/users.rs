@@ -8,6 +8,7 @@ pub trait UsersRepository: Send + Sync {
     async fn get_user(&self, username: &str, password: PasswordHash) -> Result<User, RepositoryError>;
     async fn get_user_by_id(&self, id: &UserId) -> Result<User, RepositoryError>;
     async fn get_user_by_session(&self, session_id: &str) -> Result<User, RepositoryError>;
+    async fn get_user_salt(&self, username: &str) -> Result<String, RepositoryError>;
     async fn search_users_by_username(&self, username: &str) -> Result<Vec<User>, RepositoryError>;
 }
 
@@ -56,6 +57,15 @@ impl UsersRepository for PgUsersRepository {
         .await?;
 
         Ok(result)
+    }
+
+    async fn get_user_salt(&self, username: &str) -> Result<String, RepositoryError> {
+        let salt = sqlx::query_scalar!("SELECT Salt FROM Users WHERE Name = $1", username)
+            .fetch_one(&self.0)
+            .await?
+            .ok_or(RepositoryError::NotFound)?;
+
+        Ok(salt)
     }
 
     async fn get_user_by_id(&self, id: &UserId) -> Result<User, RepositoryError> {
