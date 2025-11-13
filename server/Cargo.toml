@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 axum = { version = "0.8.6", features = ["http2"] }
-sqlx = { version = "0.8.6", features = ["runtime-tokio", "postgres"] }
+sqlx = { version = "0.8.6", features = ["runtime-tokio", "postgres", "time"] }
 time = { version = "0.3.44", features = ["formatting", "macros", "serde"] }
 tokio = { version = "1.48.0", features = ["macros", "rt-multi-thread"] }
 tracing = "0.1.41"
