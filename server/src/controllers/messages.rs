@@ -2,7 +2,7 @@ use std::{collections::HashMap, sync::Arc};
 use axum::{
     Json,
     Extension,
-    extract::{Path, State, Query}
+    extract::{Path, State, Query},
 };
 use crate::{
     AppState,
@@ -127,7 +127,7 @@ async fn check_chat_access(chats: &dyn ChatsRepository, user_id: UserId, chat_id
     chats.contains(&chat_id)
 }
 
-// /// Get chat messages
+/// Get chat messages
 #[utoipa::path(
     get,
     path = "/chats/{chat_id}",

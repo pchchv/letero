@@ -6,7 +6,10 @@ use server::{
     AppState,
     rand::SmallRandom,
     services::{session, trace::trace},
-    controllers::{chats, events, messages, search,users::{self}},
+    controllers::{
+        chats, events, messages, search,
+        users::{self},
+    },
 };
 use tokio::{net::TcpListener, sync::Mutex};
 use tower_http::services::{ServeDir, ServeFile};

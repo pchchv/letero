@@ -59,7 +59,6 @@ impl SessionsRepository for PgSessionsRepository {
         Ok(uid)
     }
 
-
     async fn remove_session(&self, uid: &str) -> Result<(), RepositoryError> {
         sqlx::query!("DELETE FROM Sessions WHERE Uid = $1", uid)
             .execute(&self.0)

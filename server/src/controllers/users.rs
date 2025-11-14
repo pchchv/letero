@@ -6,15 +6,15 @@ use crate::{
     state::AppState,
     repositories::{
         sessions::SessionsRepository,
-        users::UsersRepository
+        users::UsersRepository,
     },
     error::{
         ApiError,
-        RepositoryError
+        RepositoryError,
     },
     services::{
         auth::Auth,
-        trace::TraceId
+        trace::TraceId,
     },
     models::users::{
         UserId,
@@ -24,7 +24,7 @@ use crate::{
         LoginUserRequest,
         LoginUserResponse,
         LogoutUserResponse,
-        SESSION_LIFETIME
+        SESSION_LIFETIME,
     },
 };
 
@@ -99,7 +99,7 @@ pub async fn get_user(
                     trace_id: trace_id.clone(),
                 })
             }
-            
+
             Err(err) => {
                 tracing::error!("failed to get user: {}", err);
                 Err(ApiError::Unknown {
@@ -168,7 +168,7 @@ pub async fn logout_user(
                 trace_id: trace_id.clone(),
             })
         }
-        
+
         Err(err) => {
             tracing::error!("failed to delete session: {err}");
             Err(ApiError::Unknown {
