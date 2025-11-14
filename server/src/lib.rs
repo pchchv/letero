@@ -1,6 +1,7 @@
 mod db;
 mod logs;
 mod state;
+pub mod docs;
 pub mod rand;
 pub mod error;
 pub mod models;
