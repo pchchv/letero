@@ -1,10 +1,19 @@
 use utoipa::{
     Modify,
+    OpenApi,
     openapi::{
         ComponentsBuilder,
         security::{ApiKey, ApiKeyValue, SecurityScheme},
     },
 };
+
+#[derive(OpenApi)]
+#[openapi(info(
+   title = "Justice API",
+   version = env!("CARGO_PKG_VERSION"),
+   description = "Documentation for the Justice API."
+), modifiers(&SecurityAddon))]
+pub struct ApiDoc;
 
 struct SecurityAddon;
 
