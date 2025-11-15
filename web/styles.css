@@ -1,0 +1,21 @@
+html, body, #root {
+    height: 100%;
+}
+
+.all-screen {
+    height: calc(100vh - 1.5rem);
+}
+
+.all-centered {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.fit {
+    width: fit-content;
+}
+
+.first-color {
+    color: #00b4d8
+}

@@ -1,0 +1,37 @@
+.all-screen {
+	height: calc(100vh - 1.5rem);
+}
+
+.all-centered {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.horizontal-centered {
+	align-items: center;
+}
+
+.stack {
+	display: flex;
+	flex-direction: column;
+}
+
+.row {
+	flex-direction: row;
+}
+
+.wfit {
+	width: fit-content;
+	padding: 0;
+}
+
+.powered {
+	line-height: 0;
+	font-size: 0.9rem;
+}
+
+.bootstrap-color {
+	color: #712cf9;
+	font-weight: 500;
+}
